@@ -1,0 +1,7 @@
+{
+  "issuer": "neo4j-sso",
+  "userinfo_endpoint": "http://localhost:3000/userinfo.json",
+  "jwks_uri": "http://localhost:3000/jwks.json",
+  "authorization_endpoint": "http://localhost:3000/authorization",
+  "token_endpoint": "http://localhost:3000/authorization"
+}

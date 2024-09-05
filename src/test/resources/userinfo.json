@@ -1,0 +1,7 @@
+{
+  "sub": "testsub",
+  "name": "Test Sub",
+  "email": "testsub@test.com",
+  "empType": "staff",
+  "roles" : ["role1", "role3", "role5"]
+}
