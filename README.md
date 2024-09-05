@@ -1,4 +1,4 @@
-# Authorization Rules Plugin Auth
+# Authorization Rules Plugin
 
 Plugin/Extension to implement some rules around mapping claims from an IDP to Neo4j roles.
 
