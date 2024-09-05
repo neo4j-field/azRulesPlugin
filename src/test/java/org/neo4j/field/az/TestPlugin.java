@@ -28,11 +28,13 @@ import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.MimeMappings;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.commons.lang3.SystemUtils;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -45,26 +47,26 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.neo4j.harness.Neo4j;
 
 /**
- *
+ * Test plugin using harness
  * @author garymann
  */
 @TestInstance(Lifecycle.PER_CLASS)
 public class TestPlugin {
     
-    String resDir = "/Users/garymann/NetBeansProjects/azRulesPlugin/src/test/resources";
-    String logConfig = resDir + "/server-logs.xml"; 
+    File resourcesDirectory = new File("src/test/resources");
+    String logConfig = resourcesDirectory.getAbsolutePath() + "/server-logs.xml"; 
     static Log4jLogProvider logProvider = new Log4jLogProvider(System.out);
     Log log = logProvider.getLog(TestPlugin.class);
     private Neo4j neo4j;
     RsaJsonWebKey rsaJsonWebKey;
     Undertow server;
-
+    
     private Map<String, String> parseMap(String m) {
         log.debug("parse:" + m);
         return Splitter.on(';').withKeyValueSeparator('=').split(m);
     }
     
-    private String getGoodToken() throws JoseException {
+    private String getGoodLightAccessToken() throws JoseException {
         JwtClaims claims = new JwtClaims();
         claims.setIssuer("neo4j-sso");
         claims.setAudience("neo4j-sso");
@@ -93,7 +95,7 @@ public class TestPlugin {
             String x = "{\"keys\":[" + j + "]}";
             log.debug("json web key:" + x);
             FileWriter file;
-            file = new FileWriter(resDir + "/jwks.json");
+            file = new FileWriter(resourcesDirectory.getAbsolutePath() + "/jwks.json");
             file.write(x);
             file.close();
         } catch (IOException e) {
@@ -105,16 +107,15 @@ public class TestPlugin {
     public void setup() {
         logProvider.updateLogLevel(Level.DEBUG);
         Path logConfigPath = Paths.get(logConfig);
-        Path logPath = Paths.get(resDir);
+        Path logPath = Paths.get(resourcesDirectory.getAbsolutePath());
         
         // webserver for sso files
         server = Undertow.builder()
         .addHttpListener(3000, "localhost")
         .setHandler(exchange -> {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-            ResourceManager manager = new PathResourceManager(Paths.get(resDir));
+            ResourceManager manager = new PathResourceManager(Paths.get(resourcesDirectory.getAbsolutePath()));
             Resource resource = manager.getResource(exchange.getRelativePath());
-            log.debug("Resource::" + resource.getPath());
             if(null == resource.getContentType(MimeMappings.DEFAULT)) resource = manager.getResource("/index.html");
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, resource.getContentType(MimeMappings.DEFAULT));
             resource.serve(exchange.getResponseSender(), exchange, IoCallback.END_EXCHANGE);
@@ -163,10 +164,25 @@ public class TestPlugin {
     public void test1() {
         log.debug("Test1");
         neo4j.printLogs(System.out);
-        try (Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodToken()))) {
+        try (Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodLightAccessToken()))) {
             try (Session session = driver.session()) {
                 long result = session.run("return 1").single().get(0).asLong();
                 assertEquals(1l, result);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertFalse(true);
+        }
+    }
+    
+    @Test
+    public void test2() {
+        log.debug("Test2");
+        neo4j.printLogs(System.out);
+        try (Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodLightAccessToken()))) {
+            try (Session session = driver.session()) {
+                List<Object> result = session.run("SHOW CURRENT USER YIELD roles").single().get(0).asList();
+                assertThat(result, hasItems("admin"));
             }
         } catch (Exception e) {
             e.printStackTrace();
