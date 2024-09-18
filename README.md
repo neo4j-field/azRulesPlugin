@@ -15,6 +15,10 @@ Plugin/Extension to implement some rules around mapping claims from an IDP to Ne
 
         dbms.security.azrules.add_idp_roles_groups=false
 
+* optionally use this setting to disable requiring iat claim in a token.  use this only for access tokens if needed.
+
+        dbms.security.azrules.require_iat_claim=false
+
 * restart neo4j
 
 ## Mapping Configuration
