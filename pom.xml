@@ -3,12 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.field</groupId>
     <artifactId>azRulesPlugin</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <neo4jVersion>5.23.0</neo4jVersion>
     </properties>
     <pluginRepositories>
         <pluginRepository>
@@ -117,13 +118,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>5.16.0</version>
+            <version>${neo4jVersion}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.neo4j</groupId>
             <artifactId>neo4j-security-enterprise</artifactId>
-            <version>5.16.0</version>
+            <version>${neo4jVersion}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -164,13 +165,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>log-test-utils</artifactId>
-            <version>5.16.0</version>
+            <version>${neo4jVersion}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.neo4j.test</groupId>
             <artifactId>neo4j-harness-enterprise</artifactId>
-            <version>5.16.0</version>
+            <version>${neo4jVersion}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -182,7 +183,7 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>5.16.0</version>
+            <version>${neo4jVersion}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

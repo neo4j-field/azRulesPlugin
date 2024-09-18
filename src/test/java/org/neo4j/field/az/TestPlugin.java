@@ -89,6 +89,26 @@ public class TestPlugin {
         return jwt;
     }
     
+    // without iat
+    private String getGoodLightAccessToken2() throws JoseException {
+        JwtClaims claims = new JwtClaims();
+        claims.setIssuer("neo4j-sso");
+        claims.setAudience("neo4j-sso");
+        claims.setExpirationTimeMinutesInTheFuture(10);
+        claims.setGeneratedJwtId();
+        //claims.setIssuedAtToNow();
+        claims.setNotBeforeMinutesInThePast(2);
+        claims.setSubject("testsub");
+        
+        JsonWebSignature jws = new JsonWebSignature();
+        jws.setPayload(claims.toJson());
+        jws.setKey(rsaJsonWebKey.getPrivateKey());
+        jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
+        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+        String jwt = jws.getCompactSerialization();
+        return jwt;
+    }
+    
     private void setJWKs() {
         String j = rsaJsonWebKey.toJson();
         try {
@@ -151,6 +171,7 @@ public class TestPlugin {
                     .withConfig(GraphDatabaseSettings.strict_config_validation, false)
                     .withConfig(GraphDatabaseSettings.server_logging_config_path, logConfigPath)
                     .withConfig(GraphDatabaseSettings.logs_directory, logPath)
+                    .withConfig(AzRulesSettings.require_iat_claim, false)
                     .withDisabledServer()
                     .build();
             
@@ -163,7 +184,7 @@ public class TestPlugin {
     @Test
     public void test1() {
         log.debug("Test1");
-        neo4j.printLogs(System.out);
+        //neo4j.printLogs(System.out);
         try (Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodLightAccessToken()))) {
             try (Session session = driver.session()) {
                 long result = session.run("return 1").single().get(0).asLong();
@@ -178,9 +199,22 @@ public class TestPlugin {
     @Test
     public void test2() {
         log.debug("Test2");
-        neo4j.printLogs(System.out);
         try (Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodLightAccessToken()))) {
             try (Session session = driver.session()) {
+                List<Object> result = session.run("SHOW CURRENT USER YIELD roles").single().get(0).asList();
+                assertThat(result, hasItems("admin"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertFalse(true);
+        }
+    }
+    
+    @Test
+    public void test3() {
+        log.debug("Test3");
+        try ( Driver driver = GraphDatabase.driver(neo4j.boltURI(), AuthTokens.basic("testsub", getGoodLightAccessToken2()))) {
+            try ( Session session = driver.session()) {
                 List<Object> result = session.run("SHOW CURRENT USER YIELD roles").single().get(0).asList();
                 assertThat(result, hasItems("admin"));
             }

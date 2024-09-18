@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.neo4j.configuration.Config;
 import com.neo4j.configuration.SecuritySettings;
+import com.neo4j.server.security.enterprise.auth.MessageConstants;
 import com.neo4j.server.security.enterprise.auth.OidcAuthInfo;
 import com.neo4j.server.security.enterprise.auth.OidcSettings;
 import com.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
@@ -30,6 +31,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import org.jose4j.json.JsonUtil;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
@@ -37,16 +39,16 @@ import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.JsonHelp;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.security.AuthTokenExpiredException;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.server.security.auth.ValidityCheck;
 
 /**
- * TODO - logging setup
- * TODO - caching setup
+ * TODO - az caching setup
  * TODO - exceptions
- * TODO - eval map of claims/content.  not just roles
  */
 public class AzRulesAzPlugin extends AuthPlugin.Adapter {
     private AuthProviderOperations api = null;
@@ -117,9 +119,14 @@ public class AzRulesAzPlugin extends AuthPlugin.Adapter {
                     intLog.debug("Validated Token with Claims: " + jwtClaims);
                     String username = getUsername(authToken, jwtClaims);
                     intLog.debug("Username: " + username);
-                    Set<String> roles = Set.of();
-                    roles = getRoles(authToken, jwtClaims);
-                    OidcAuthInfo authInfo = new OidcAuthInfo(username, getName(), AuthenticationResult.SUCCESS, roles, jwtClaims.getExpirationTime());
+                    //Set<String> roles = Set.of();
+                    Set<String> roles = getRoles(authToken, jwtClaims);
+                    OidcAuthInfo authInfo = new OidcAuthInfo(
+                            username,
+                            getName(),
+                            AuthenticationResult.SUCCESS,
+                            roles,
+                            List.of(new TokenExpiryCheck(jwtClaims.getExpirationTime(), 30)));
                     //api.cacheAuthorizationInfo(authInfo);
                     api.log().info("Successfully authenticated user:" + username + " with roles:" + roles);
                     return authInfo;
@@ -179,8 +186,12 @@ public class AzRulesAzPlugin extends AuthPlugin.Adapter {
                 .setExpectedIssuer(iss)
                 .setExpectedAudience(aud)
                 .setEnableRequireIntegrity()
-                .setRequireIssuedAt()
+                //.setRequireIssuedAt()
                 .setIssuedAtRestrictions(0, Integer.MAX_VALUE);
+        // make iat requirement configurable
+        if (config.get(AzRulesSettings.require_iat_claim) == true) {
+            jwtConsumerBuilder.setRequireIssuedAt();
+        }
 
         if (jwks != null) {
             HttpsJwks httpsJkws = new HttpsJwks(jwks.toString());
@@ -296,4 +307,24 @@ public class AzRulesAzPlugin extends AuthPlugin.Adapter {
     }
 
     private record UserInfo(String token, Collection<String> groups, Map<String,Object> claims) {}
+    
+    private class TokenExpiryCheck implements ValidityCheck {
+
+        private final NumericDate exp;
+        private final long clockSkewSeconds;
+
+        TokenExpiryCheck(NumericDate exp, long clockSkewSeconds) {
+            this.clockSkewSeconds = clockSkewSeconds;
+            this.exp = exp;
+        }
+
+        @Override
+        public void validate() {
+            var timeNow = NumericDate.now();
+            timeNow.addSeconds(-clockSkewSeconds);
+            if (timeNow.isAfter(exp)) {
+                throw new AuthTokenExpiredException(MessageConstants.AUTHENTICATION_INFO_EXPIRED);
+            }
+        }
+    }
 }

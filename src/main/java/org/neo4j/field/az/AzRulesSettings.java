@@ -9,8 +9,11 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 
 @ServiceProvider
 public class AzRulesSettings implements SettingsDeclaration {
-    
     @Description("Flag to enable/disable adding IDP roles/groups to Neo4j roles/groups list")
     public static final Setting<Boolean> add_idp_roles_groups =
             newBuilder( "dbms.security.azrules.add_idp_roles_groups", BOOL, true ).build();
+    
+    @Description("Flag to enable/disable requiring the iat claim (in access token)")
+    public static final Setting<Boolean> require_iat_claim =
+            newBuilder( "dbms.security.azrules.require_iat_claim", BOOL, true ).build();
 }
