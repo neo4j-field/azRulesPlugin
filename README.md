@@ -38,6 +38,9 @@ which says:
 * if the user has role1 and role5, grant them admin role in neo4j.  
 * if the user has a staff empType claim, grant them staffrole in Neo4j
 
+*New* - the role names themselves can incorporate data from the claims:
+        (roles:role1&&roles:role2)=${clearance}_${caveats}_${citizenship}
+
 ## Limitations & More Info
 
 * Tested for use with SSO oidc provider.  Could be exstended/tested to use with custom auth tokens as well.

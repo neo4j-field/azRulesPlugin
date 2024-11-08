@@ -43,6 +43,7 @@ public class AzRulesGroupRoleMapping {
         log = ilog;
     }
 
+    /* simple azrules mapping - to be removed */
     public static List<AzRuleSet> parseAzRulesMapping(String groupMapping, InternalLog ilog) {
         Map<String, Collection<String>> map = new HashMap<>();
         List<AzRuleSet> rules = new ArrayList<>();
@@ -69,7 +70,6 @@ public class AzRulesGroupRoleMapping {
                 }       
             }
         } 
-        ilog.debug("Parsed complex rulesets:" + mappingRules);
         return rules;
     }
     
@@ -77,6 +77,7 @@ public class AzRulesGroupRoleMapping {
         return mappingRules;
     }
     
+    /* basic parsing - to be removed */
     private static AzRuleSet parseRuleSet(String input, InternalLog ilog) {
         String z[] = input.split(KEY_VALUE_DELIMITER);
         AzRuleSet x = new AzRuleSet(z[1]);
@@ -157,7 +158,9 @@ public class AzRulesGroupRoleMapping {
         for (AzRuleSet z : mappingRules) {
             log.debug("Evaluate Rule: " + z + "->" + z.evaluateX(allClaims));
             if (z.evaluateX(allClaims)) {
-                mappedRoles.addAll(z.results);
+                //mappedRoles.addAll(z.results);
+                log.info("HERE:" + z.getEvaluatedResults(allClaims));
+                mappedRoles.addAll(z.getEvaluatedResults(allClaims));
             }
         }
         return mappedRoles;

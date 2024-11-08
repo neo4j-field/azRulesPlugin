@@ -99,6 +99,28 @@ public class AzRuleSet {
         return b;
     }
     
+    public List<String> getEvaluatedResults(Map<String, Object> claims) {
+        List<String> eval = new ArrayList<>();
+        for (String r : results) {
+            if (r.contains("${")) {
+                String e = r;
+                for (Map.Entry<String, Object> rep : claims.entrySet()) {
+                    Object o = rep.getValue();
+                    if (o instanceof String) {
+                        e = e.replace("${" + rep.getKey() + "}", (String)o);
+                    } else if (o instanceof Collection<?>) {
+                        String x = String.join("__", (List<String>) o);
+                        e = e.replace("${" + rep.getKey() + "}", x);
+                    }
+                }
+                eval.add(e);
+            } else {
+                eval.add(r);
+            }
+        }
+        return eval;
+    }
+    
     @Override
     public String toString() {
         return "{" + rules.toString() + "==>" + results.toString() + "}";

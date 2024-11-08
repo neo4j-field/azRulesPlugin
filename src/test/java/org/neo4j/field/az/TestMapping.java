@@ -198,4 +198,24 @@ public class TestMapping {
         Collection<String>roles3 = m3.get(claims);
         assertEquals(0, roles3.size());
     }
+    
+    @Test
+    public void testMapping7() {
+        log.info("--------------");
+        log.info("Test Complex with Groups and Patterned Role Name");
+        Map<String, Object>claims = new HashMap<>();
+        claims.put("caveats", Arrays.asList("SI","TK", "G"));
+        claims.put("citizenship", "US");
+        //claims.put("groups", Arrays.asList("cn=TestGroup1, ou=groups, o=U.S. Government,c=us", "cn=TestGroup2, ou=groups, o=U.S. Government,c=us"));
+        claims.put("clearance", Arrays.asList("TS"));
+        
+        // test out simple AND mapping - false
+        String mapping = "(clearance:TS&&caveats:SI&&caveats:TK&&caveats:G&&(citizenship:US||citizenship:UK||citzenship:NZ||citizenship:AUS||citizenship:CAN))=TS_SI__TK__G_FVEY,S_SI__TK__G_FVEY,TS,S,${clearance}_${caveats}_${citizenship}";
+        AzRulesGroupRoleMapping m = new AzRulesGroupRoleMapping(mapping, logProvider.getLog(getClass()));
+        Collection<String>roles = m.get(claims);
+        log.info("roles::" + roles);
+        //assertEquals(0, roles.size());
+        
+        
+    }
 }
